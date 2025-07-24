@@ -14,7 +14,7 @@ java {
 }
 
 application {
-    mainClass = 'App'  // Use the fully qualified name if App is in a package, like 'com.todo.App'
+    mainClass = 'App'  // Adjust to 'models.App' if App is in a package
 }
 
 repositories {
@@ -24,6 +24,8 @@ repositories {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.7.0' // ✅ Fix here
+
     implementation "com.sparkjava:spark-core:2.6.0"
     implementation "com.sparkjava:spark-template-handlebars:2.5.5"
     implementation 'org.slf4j:slf4j-simple:1.7.21'
