@@ -32,3 +32,11 @@ dependencies {
 }
 
 task stage(dependsOn: ['clean', 'installDist'])
+
+test {
+    useJUnitPlatform()
+    failIfNoMatchingTests = false
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
