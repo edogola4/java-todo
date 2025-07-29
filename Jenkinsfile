@@ -5,7 +5,6 @@ pipeline {
         gradle 'Gradle-9'
     }
 
-
     environment {
         VERSION_NUMBER = '1.0'
     }
@@ -17,28 +16,34 @@ pipeline {
                 git 'https://github.com/brianmarete/java-todo.git'
             }
         }
-        stage('Build ') {
+
+        stage('Set Permissions') {
             steps {
-                echo "Build number ${BUILD_NUMBER}"
-                // withGradle() {
-                    sh 'gradle build'
-                // }
+                echo 'Making gradlew executable'
+                sh 'chmod +x ./gradlew'
             }
         }
+
+        stage('Build') {
+            steps {
+                echo "Build number ${BUILD_NUMBER}"
+                sh './gradlew build'
+            }
+        }
+
         stage('Test') {
             steps {
                 echo 'Testing the project'
-                // withGradle() {
-                    sh 'gradle test'
-                // }
+                sh './gradlew test'
             }
         }
     }
+
     post {
         success {
             slackSend color: "good", message: "Build #${BUILD_NUMBER} ran successfully"
         }
-        
+
         failure {
             slackSend color: "danger", message: "Build #${BUILD_NUMBER} failed"
         }
