@@ -13,14 +13,7 @@ pipeline {
         stage('Clone repository') {
             steps {
                 echo 'Cloning repository'
-                git 'https://github.com/brianmarete/java-todo.git'
-            }
-        }
-
-        stage('Set Permissions') {
-            steps {
-                echo 'Making gradlew executable'
-                sh 'chmod +x ./gradlew'
+                git 'https://github.com/edogola4/java-todo.git'
             }
         }
 
@@ -49,3 +42,4 @@ pipeline {
         }
     }
 }
+
