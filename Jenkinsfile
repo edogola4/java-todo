@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         VERSION_NUMBER = '1.0'
+        SLACK_WEBHOOK = 'https://hooks.slack.com/services/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'
     }
 
     stages {
@@ -34,12 +35,19 @@ pipeline {
 
     post {
         success {
-            slackSend color: "good", message: "Build #${BUILD_NUMBER} ran successfully"
+            sh '''
+                curl -X POST -H 'Content-type: application/json' \
+                --data "{\"text\": \":white_check_mark: *Build #${BUILD_NUMBER}* of *${JOB_NAME}* succeeded! \\n<${BUILD_URL}|View Build>\"}" \
+                $SLACK_WEBHOOK
+            '''
         }
 
         failure {
-            slackSend color: "danger", message: "Build #${BUILD_NUMBER} failed"
+            sh '''
+                curl -X POST -H 'Content-type: application/json' \
+                --data "{\"text\": \":x: *Build #${BUILD_NUMBER}* of *${JOB_NAME}* failed. \\n<${BUILD_URL}|View Build>\"}" \
+                $SLACK_WEBHOOK
+            '''
         }
     }
 }
-
