@@ -36,6 +36,9 @@ pipeline {
                 sh './gradlew --stop || true'
                 // Clear Gradle cache to be safe
                 sh 'rm -rf ~/.gradle/caches/ || true'
+                // Upgrade Gradle wrapper to support Java 21
+                sh './gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin'
+                sh './gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin'  // Run twice as recommended
                 // Set Gradle properties and run build
                 sh '''
                     export GRADLE_OPTS="-Dorg.gradle.java.home=$JAVA_HOME"
