@@ -1,10 +1,11 @@
 pipeline {
     agent any
     tools {
-        jdk 'Java-21'      // Add this line - configure Java 21 in Jenkins
         gradle 'Gradle-9'  // Make sure this matches your Jenkins Gradle installation name
     }
     environment {
+        JAVA_HOME = '/opt/homebrew/opt/openjdk@21'  // Direct path to Java 21
+        PATH = "${JAVA_HOME}/bin:${PATH}"
         VERSION_NUMBER = '1.0'
         // Slack
         SLACK_WEBHOOK = 'https://hooks.slack.com/services/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'
