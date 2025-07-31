@@ -46,8 +46,8 @@ pipeline {
             }
             post {
                 always {
-                    // ✅ FIXED: Use 'junit' instead of 'publishTestResults'
-                    junit testResultsPattern: 'build/test-results/test/*.xml', allowEmptyResults: true
+                    // ✅ FIXED: Use 'junit' with correct parameter name
+                    junit testResults: 'build/test-results/test/*.xml', allowEmptyResults: true
                     
                     // Publish HTML test reports
                     publishHTML([
