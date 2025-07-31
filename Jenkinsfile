@@ -1,16 +1,13 @@
 pipeline {
     agent any
-
     tools {
-        gradle 'Gradle-9' // Make sure this matches your Jenkins Gradle installation name
+        jdk 'Java-21'      // Add this line - configure Java 21 in Jenkins
+        gradle 'Gradle-9'  // Make sure this matches your Jenkins Gradle installation name
     }
-
     environment {
         VERSION_NUMBER = '1.0'
-
         // Slack
         SLACK_WEBHOOK = 'https://hooks.slack.com/services/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'
-
         // Email
         EMAIL_BODY = """
             <p>EXECUTED: Job <b>'${env.JOB_NAME}:${env.BUILD_NUMBER})'</b></p>
@@ -22,7 +19,6 @@ pipeline {
         EMAIL_SUBJECT_FAILURE = "Status: 'FAILURE' - Job '${env.JOB_NAME}:${env.BUILD_NUMBER}'"
         EMAIL_RECIPIENT = 'brandon14ogola@gmail.com'
     }
-
     stages {
         stage('Clone repository') {
             steps {
@@ -30,14 +26,14 @@ pipeline {
                 git 'https://github.com/edogola4/java-todo.git'
             }
         }
-
         stage('Build') {
             steps {
                 echo "🏗️ Running build - Build #${BUILD_NUMBER}"
+                // Add Java version verification
+                sh 'java -version'
                 sh './gradlew build'
             }
         }
-
         stage('Test') {
             steps {
                 echo '🧪 Running tests...'
@@ -45,7 +41,6 @@ pipeline {
             }
         }
     }
-
     post {
         success {
             script {
@@ -64,7 +59,6 @@ pipeline {
                 )
             }
         }
-
         failure {
             script {
                 // Slack notification
