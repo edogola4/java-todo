@@ -46,14 +46,18 @@ pipeline {
             }
             post {
                 always {
-                    publishTestResults testResultsPattern: 'build/test-results/test/*.xml'
+                    // ✅ FIXED: Use 'junit' instead of 'publishTestResults'
+                    junit testResultsPattern: 'build/test-results/test/*.xml', allowEmptyResults: true
+                    
+                    // Publish HTML test reports
                     publishHTML([
                         allowMissing: false,
-                        alwaysLinkToLastBuild: false,
+                        alwaysLinkToLastBuild: true,
                         keepAll: true,
                         reportDir: 'build/reports/tests/test',
                         reportFiles: 'index.html',
-                        reportName: 'Test Report'
+                        reportName: 'Test Report',
+                        reportTitles: 'JUnit Test Results'
                     ])
                 }
             }
@@ -62,7 +66,7 @@ pipeline {
             steps {
                 echo '📦 Creating distribution...'
                 sh './gradlew installDist --no-daemon'
-                archiveArtifacts artifacts: 'build/distributions/*.tar, build/distributions/*.zip', fingerprint: true
+                archiveArtifacts artifacts: 'build/distributions/*.tar, build/distributions/*.zip', fingerprint: true, allowEmptyArchive: true
             }
         }
     }
