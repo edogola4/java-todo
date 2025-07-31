@@ -36,7 +36,7 @@ pipeline {
                 sh './gradlew --stop || true'
                 
                 // Build with Java 21 toolchain
-                sh './gradlew clean build --no-daemon --info'
+                sh './gradlew clean build --no-daemon'
             }
         }
         stage('Test') {
@@ -46,19 +46,8 @@ pipeline {
             }
             post {
                 always {
-                    // ✅ FIXED: Use 'junit' with correct parameter name
+                    // Record JUnit test results
                     junit testResults: 'build/test-results/test/*.xml', allowEmptyResults: true
-                    
-                    // Publish HTML test reports
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'build/reports/tests/test',
-                        reportFiles: 'index.html',
-                        reportName: 'Test Report',
-                        reportTitles: 'JUnit Test Results'
-                    ])
                 }
             }
         }
@@ -66,6 +55,7 @@ pipeline {
             steps {
                 echo '📦 Creating distribution...'
                 sh './gradlew installDist --no-daemon'
+                // Archive the built artifacts
                 archiveArtifacts artifacts: 'build/distributions/*.tar, build/distributions/*.zip', fingerprint: true, allowEmptyArchive: true
             }
         }
