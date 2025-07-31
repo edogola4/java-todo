@@ -32,7 +32,15 @@ pipeline {
                 echo "🏗️ Running build - Build #${BUILD_NUMBER}"
                 // Add Java version verification
                 sh 'java -version'
-                sh './gradlew build'
+                // Stop any existing Gradle daemons
+                sh './gradlew --stop || true'
+                // Clear Gradle cache to be safe
+                sh 'rm -rf ~/.gradle/caches/ || true'
+                // Set Gradle properties and run build
+                sh '''
+                    export GRADLE_OPTS="-Dorg.gradle.java.home=$JAVA_HOME"
+                    ./gradlew clean build --no-daemon
+                '''
             }
         }
         stage('Test') {
