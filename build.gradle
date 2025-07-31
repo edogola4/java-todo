@@ -7,10 +7,11 @@ group 'to-do.list'
 version '1.0-SNAPSHOT'
 ext.applicationName = 'todo-app'
 
-// ✅ TEMPORARY: Keep Java 8 for Gradle 6.5.1 compatibility
+// ✅ FINAL: Java 21 with toolchain (works with Gradle 8.14.3+)
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 application {
@@ -21,15 +22,17 @@ repositories {
     mavenCentral()
 }
 
+// ✅ Updated dependencies for Java 21
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-    testImplementation 'org.junit.platform:junit-platform-launcher:1.7.0'
-    implementation "com.sparkjava:spark-core:2.6.0"
-    implementation "com.sparkjava:spark-template-handlebars:2.5.5"
-    implementation 'org.slf4j:slf4j-simple:1.7.21'
-    implementation 'org.sql2o:sql2o:1.5.4'
-    implementation group: 'com.h2database', name: 'h2', version: '1.4.191'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.10.1'
+    
+    implementation 'com.sparkjava:spark-core:2.9.4'
+    implementation 'com.sparkjava:spark-template-handlebars:2.7.1'
+    implementation 'org.slf4j:slf4j-simple:2.0.9'
+    implementation 'org.sql2o:sql2o:1.6.0'
+    implementation 'com.h2database:h2:2.2.224'
 }
 
 task stage(dependsOn: ['clean', 'installDist'])
@@ -37,6 +40,10 @@ task stage(dependsOn: ['clean', 'installDist'])
 test {
     useJUnitPlatform()
     testLogging {
-        events "passed", "skipped", "failed"
+        events "passed", "skipped", "failed", "standard_out", "standard_error"
+        exceptionFormat "full"
+        showCauses true
+        showExceptions true
+        showStackTraces true
     }
 }
