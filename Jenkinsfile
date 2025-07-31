@@ -30,40 +30,42 @@ pipeline {
         stage('Build') {
             steps {
                 echo "🏗️ Running build - Build #${BUILD_NUMBER}"
-                // Add Java version verification
+                // Verify Java and Gradle versions
                 sh 'java -version'
+                sh './gradlew --version'
                 // Stop any existing Gradle daemons
                 sh './gradlew --stop || true'
-                // Clear Gradle cache to be safe
-                sh 'rm -rf ~/.gradle/caches/ || true'
-                
-                // Download and use Gradle 8.14.3 directly
-                sh '''
-                    echo "Downloading Gradle 8.14.3..."
-                    
-                    # Download Gradle 8.14.3 if not already downloaded
-                    if [ ! -d "/tmp/gradle-8.14.3" ]; then
-                        cd /tmp
-                        curl -L -o gradle-8.14.3-bin.zip https://services.gradle.org/distributions/gradle-8.14.3-bin.zip
-                        unzip -q gradle-8.14.3-bin.zip
-                    fi
-                    
-                    # Use the downloaded Gradle to update wrapper
-                    cd $WORKSPACE
-                    /tmp/gradle-8.14.3/bin/gradle wrapper --gradle-version=8.14.3 --distribution-type=bin
-                '''
-                
-                // Now use the updated wrapper with Java 21
-                sh '''
-                    export GRADLE_OPTS="-Dorg.gradle.java.home=$JAVA_HOME"
-                    ./gradlew clean build --no-daemon
-                '''
+                // Build with Java 21
+                sh './gradlew clean build --no-daemon --info'
             }
         }
         stage('Test') {
             steps {
                 echo '🧪 Running tests...'
-                sh './gradlew test'
+                sh './gradlew test --no-daemon'
+            }
+            post {
+                always {
+                    // Publish test results
+                    publishTestResults testResultsPattern: 'build/test-results/test/*.xml'
+                    // Archive test reports
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'build/reports/tests/test',
+                        reportFiles: 'index.html',
+                        reportName: 'Test Report'
+                    ])
+                }
+            }
+        }
+        stage('Package') {
+            steps {
+                echo '📦 Creating distribution...'
+                sh './gradlew installDist --no-daemon'
+                // Archive the built artifacts
+                archiveArtifacts artifacts: 'build/distributions/*.tar, build/distributions/*.zip', fingerprint: true
             }
         }
     }
@@ -81,7 +83,12 @@ pipeline {
                     attachLog: true,
                     body: EMAIL_BODY,
                     subject: EMAIL_SUBJECT_SUCCESS,
-                    to: EMAIL_RECIPIENT
+                    to: EMAIL_RECIPIENT,
+                    mimeType: 'text/html',
+                    recipientProviders: [
+                        [$class: 'DevelopersRecipientProvider'],
+                        [$class: 'RequesterRecipientProvider']
+                    ]
                 )
             }
         }
@@ -98,9 +105,18 @@ pipeline {
                     attachLog: true,
                     body: EMAIL_BODY,
                     subject: EMAIL_SUBJECT_FAILURE,
-                    to: EMAIL_RECIPIENT
+                    to: EMAIL_RECIPIENT,
+                    mimeType: 'text/html',
+                    recipientProviders: [
+                        [$class: 'DevelopersRecipientProvider'],
+                        [$class: 'RequesterRecipientProvider']
+                    ]
                 )
             }
+        }
+        always {
+            // Clean workspace
+            cleanWs()
         }
     }
 }
