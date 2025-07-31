@@ -25,88 +25,82 @@ pipeline {
                 git 'https://github.com/edogola4/java-todo.git'
             }
         }
-        stage('Upgrade Gradle') {
+        stage('Build') {
             steps {
-                echo '⬆️ Upgrading Gradle wrapper to 8.14.3...'
-                // Verify current versions
+                echo "🏗️ Running build with Java 21 - Build #${BUILD_NUMBER}"
+                // Verify versions
                 sh 'java -version'
                 sh './gradlew --version'
                 
-                // Stop any daemons
+                // Stop any existing daemons
                 sh './gradlew --stop || true'
                 
-                // Download Gradle 8.14.3 and use it to upgrade wrapper
-                sh '''
-                    echo "Downloading Gradle 8.14.3..."
-                    if [ ! -d "/tmp/gradle-8.14.3" ]; then
-                        cd /tmp
-                        curl -L -o gradle-8.14.3-bin.zip https://services.gradle.org/distributions/gradle-8.14.3-bin.zip
-                        unzip -q gradle-8.14.3-bin.zip
-                    fi
-                    
-                    # Use downloaded Gradle to update wrapper
-                    cd $WORKSPACE
-                    /tmp/gradle-8.14.3/bin/gradle wrapper --gradle-version=8.14.3 --distribution-type=bin
-                    
-                    # Verify the upgrade worked
-                    echo "Wrapper upgraded! New version:"
-                    ./gradlew --version
-                '''
+                // Build with Java 21 toolchain
+                sh './gradlew clean build --no-daemon --info'
             }
         }
-        stage('Test with New Gradle') {
+        stage('Test') {
             steps {
-                echo '🧪 Testing with upgraded Gradle...'
-                sh '''
-                    export GRADLE_OPTS="-Dorg.gradle.java.home=$JAVA_HOME"
-                    ./gradlew clean build --no-daemon
-                '''
+                echo '🧪 Running tests...'
+                sh './gradlew test --no-daemon'
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: 'build/test-results/test/*.xml'
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'build/reports/tests/test',
+                        reportFiles: 'index.html',
+                        reportName: 'Test Report'
+                    ])
+                }
             }
         }
-        stage('Commit Wrapper Changes') {
+        stage('Package') {
             steps {
-                echo '💾 Committing Gradle wrapper upgrade...'
-                sh '''
-                    # Configure git if needed
-                    git config user.email "jenkins@example.com"
-                    git config user.name "Jenkins CI"
-                    
-                    # Add only the wrapper files
-                    git add gradle/wrapper/gradle-wrapper.properties
-                    git add gradle/wrapper/gradle-wrapper.jar
-                    git add gradlew
-                    git add gradlew.bat
-                    
-                    # Check if there are changes to commit
-                    if git diff --staged --quiet; then
-                        echo "No wrapper changes to commit"
-                    else
-                        git commit -m "Upgrade Gradle wrapper to 8.14.3 for Java 21 support"
-                        git push origin master
-                        echo "Gradle wrapper upgrade committed and pushed!"
-                    fi
-                '''
+                echo '📦 Creating distribution...'
+                sh './gradlew installDist --no-daemon'
+                archiveArtifacts artifacts: 'build/distributions/*.tar, build/distributions/*.zip', fingerprint: true
             }
         }
     }
     post {
         success {
             script {
-                def msg = """:white_check_mark: *Gradle Upgrade Build #${env.BUILD_NUMBER}* succeeded. ✅\nGradle wrapper upgraded to 8.14.3. Ready for Java 21!\n<${env.BUILD_URL}|Click here to view>"""
+                def msg = """:white_check_mark: *Build #${env.BUILD_NUMBER}* for *${env.JOB_NAME}* succeeded with Java 21! ✅\n<${env.BUILD_URL}|Click here to view>"""
                 sh """
                     curl -X POST -H 'Content-type: application/json' \\
                     --data '{\"text\": \"${msg}\"}' ${env.SLACK_WEBHOOK}
                 """
+                emailext(
+                    attachLog: true,
+                    body: EMAIL_BODY,
+                    subject: EMAIL_SUBJECT_SUCCESS,
+                    to: EMAIL_RECIPIENT,
+                    mimeType: 'text/html'
+                )
             }
         }
         failure {
             script {
-                def msg = """:x: *Gradle Upgrade Build #${env.BUILD_NUMBER}* failed. ❌\n<${env.BUILD_URL}|Click here to investigate>"""
+                def msg = """:x: *Build #${env.BUILD_NUMBER}* for *${env.JOB_NAME}* failed. ❌\n<${env.BUILD_URL}|Click here to investigate>"""
                 sh """
                     curl -X POST -H 'Content-type: application/json' \\
                     --data '{\"text\": \"${msg}\"}' ${env.SLACK_WEBHOOK}
                 """
+                emailext(
+                    attachLog: true,
+                    body: EMAIL_BODY,
+                    subject: EMAIL_SUBJECT_FAILURE,
+                    to: EMAIL_RECIPIENT,
+                    mimeType: 'text/html'
+                )
             }
+        }
+        always {
+            cleanWs()
         }
     }
 }
