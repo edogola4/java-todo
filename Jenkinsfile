@@ -36,10 +36,24 @@ pipeline {
                 sh './gradlew --stop || true'
                 // Clear Gradle cache to be safe
                 sh 'rm -rf ~/.gradle/caches/ || true'
-                // Upgrade Gradle wrapper to support Java 21
-                sh './gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin'
-                sh './gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin'  // Run twice as recommended
-                // Set Gradle properties and run build
+                
+                // Download and use Gradle 8.14.3 directly
+                sh '''
+                    echo "Downloading Gradle 8.14.3..."
+                    
+                    # Download Gradle 8.14.3 if not already downloaded
+                    if [ ! -d "/tmp/gradle-8.14.3" ]; then
+                        cd /tmp
+                        curl -L -o gradle-8.14.3-bin.zip https://services.gradle.org/distributions/gradle-8.14.3-bin.zip
+                        unzip -q gradle-8.14.3-bin.zip
+                    fi
+                    
+                    # Use the downloaded Gradle to update wrapper
+                    cd $WORKSPACE
+                    /tmp/gradle-8.14.3/bin/gradle wrapper --gradle-version=8.14.3 --distribution-type=bin
+                '''
+                
+                // Now use the updated wrapper with Java 21
                 sh '''
                     export GRADLE_OPTS="-Dorg.gradle.java.home=$JAVA_HOME"
                     ./gradlew clean build --no-daemon
